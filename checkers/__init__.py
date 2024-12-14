@@ -1,0 +1,1 @@
+# allows importing the checkers folder
