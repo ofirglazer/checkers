@@ -31,6 +31,21 @@ class Board:
                 else:
                     self.board[row].append(0)
 
+    def get_piece(self, row, col):
+        return self.board[row][col]
+
+    def move(self, piece, row, col):
+        self.board[row][col] = self.board[piece.row][piece.col]
+        self.board[piece.row][piece.col] = 0
+        piece.move(row, col)
+
+        if row == ROWS or row == 0:
+            piece.make_king()
+            if piece.color == WHITE:
+                self.white_left += 1
+            else:
+                self.red_kings += 1
+
     def draw(self, win):
         self.draw_squares(win)
         for row in range(ROWS):
