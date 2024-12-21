@@ -42,7 +42,7 @@ class Board:
         if row == ROWS - 1 or row == 0:
             piece.make_king()
             if piece.color == WHITE:
-                self.white_left += 1
+                self.white_kings += 1
             else:
                 self.red_kings += 1
 
@@ -56,9 +56,9 @@ class Board:
 
     def winner(self):
         if self.red_left <= 0:
-            return RED
-        elif self.white_left <= 0:
             return WHITE
+        elif self.white_left <= 0:
+            return RED
         return None
 
     def draw(self, win):

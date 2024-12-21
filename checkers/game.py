@@ -1,6 +1,6 @@
 import pygame
 from .board import Board
-from .constants import RED, WHITE, BLUE, SQUARE_SIZE
+from .constants import RED, WHITE, BLUE, BLACK, SQUARE_SIZE
 
 
 class Game:
@@ -12,6 +12,7 @@ class Game:
         self.win = win
 
     def reset(self):
+        self.win.fill(BLACK)
         self._init()
 
     def _init(self):
