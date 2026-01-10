@@ -1,5 +1,5 @@
 import pygame
-from .board import Board
+from src.board import Board
 from .constants import RED, WHITE, BLUE, BLACK, SQUARE_SIZE
 
 
