@@ -12,13 +12,154 @@ Tests cover:
 - Rule enforcement
 """
 
-import pytest
 from src.move_validator import MoveValidator
 from src.board import Board
 from src.position import Position
-from src.piece import Piece
-from src.move import Move
 from src.config import Color
+from src.piece import Piece
+import pytest
+
+
+class TestMoveValidatorIsValidSelection:
+    """Test piece selection validation"""
+
+    def test_is_valid_selection_own_piece(self):
+        """Test that player can select their own piece"""
+        board = Board()
+        validator = MoveValidator()
+
+        is_valid_selection = validator.is_valid_selection(board, Position(2, 0), Color.WHITE)
+
+        assert is_valid_selection is True
+
+    def test_cannot_select_opponent_piece(self):
+        """Test that player cannot select opponent's piece"""
+        board = Board()
+        validator = MoveValidator()
+
+        is_valid_selection = validator.is_valid_selection(board, Position(5, 1), Color.WHITE)
+
+        assert is_valid_selection is False
+
+    def test_cannot_select_empty_square(self):
+        """Test that player cannot select empty square"""
+        board = Board()
+        validator = MoveValidator()
+
+        is_valid_selection = validator.is_valid_selection(board, Position(3, 3), Color.WHITE)
+
+        assert is_valid_selection is False
+
+    def test_is_valid_selection_king(self):
+        """Test that player can select their king"""
+        board = Board()
+        validator = MoveValidator()
+
+        # Create a king
+        king = Piece(Color.WHITE)
+        king.promote_to_king()
+        board.set_piece(Position(4, 4), king)
+
+        is_valid_selection = validator.is_valid_selection(board, Position(4, 4), Color.WHITE)
+
+        assert is_valid_selection is True
+
+class TestMoveValidatorGetAllValidMoves:
+    """Test valid move generation"""
+
+    def test_get_valid_moves_white_starting_position(self):
+        """Test getting valid moves for white piece at start"""
+        board = Board()
+        validator = MoveValidator()
+
+        valid_moves = validator.get_all_valid_moves(board, Position(2, 0))
+
+        # White piece at (2,0) should be able to move to (3,1)
+        assert Position(3, 1) in valid_moves
+        assert len(valid_moves) == 1
+        # assert isinstance(valid_moves[Position(3, 1)], Move)
+
+    def test_get_valid_moves_black_starting_position(self):
+        """Test getting valid moves for black piece at start"""
+        board = Board()
+        validator = MoveValidator()
+
+        valid_moves = validator.get_all_valid_moves(board, Position(5, 1))
+
+        # Black piece at (5,1) should be able to move to (4,0) or (4,2)
+        assert Position(4, 0) in valid_moves
+        assert Position(4, 2) in valid_moves
+        assert len(valid_moves) == 2
+
+    def test_get_valid_moves_empty_square(self):
+        """Test getting valid moves from empty square returns empty list"""
+        board = Board()
+        validator = MoveValidator()
+
+        valid_moves = validator.get_all_valid_moves(board, Position(3, 3))
+
+        assert valid_moves == []
+
+    def test_get_valid_moves_blocked_piece(self):
+        """Test piece with no valid moves returns empty dict"""
+        board = Board()
+        validator = MoveValidator()
+
+        # Corner piece that's blocked
+        valid_moves = validator.get_all_valid_moves(board, Position(0, 0))
+
+        assert len(valid_moves) == 0
+
+    def test_get_valid_moves_multiple_options(self):
+        """Test piece with multiple valid moves"""
+        board = Board()
+        validator = MoveValidator()
+
+        # Place piece in middle of board with multiple moves
+        board.pieces.clear()
+        board.set_piece(Position(4, 4), Piece(Color.WHITE))
+
+        valid_moves = validator.get_all_valid_moves(board, Position(4, 4))
+
+        # Should have at least 2 forward diagonal moves
+        assert len(valid_moves) >= 2
+
+    def test_get_valid_moves_king_bidirectional(self):
+        """Test king can move in all diagonal directions"""
+        board = Board()
+        validator = MoveValidator()
+
+        # Place king in middle
+        board.pieces.clear()
+        king = Piece(Color.WHITE)
+        king.promote_to_king()
+        board.set_piece(Position(4, 4), king)
+
+        valid_moves = validator.get_all_valid_moves(board, Position(4, 4))
+
+        # King should have 4 diagonal moves (forward and backward)
+        assert len(valid_moves) == 4
+        # Check all four diagonals
+        assert Position(5, 5) in valid_moves  # Forward-right
+        assert Position(5, 3) in valid_moves  # Forward-left
+        assert Position(3, 5) in valid_moves  # Backward-right
+        assert Position(3, 3) in valid_moves  # Backward-left
+
+    def test_get_valid_moves_at_board_edge(self):
+        """Test valid moves for piece at board edge"""
+        board = Board()
+        validator = MoveValidator()
+
+        # White piece at edge
+        board.pieces.clear()
+        board.set_piece(Position(2, 0), Piece(Color.WHITE))
+
+        valid_moves = validator.get_all_valid_moves(board, Position(2, 0))
+
+        # Should only have one move (can't go off board)
+        assert Position(3, 1) in valid_moves
+        # Should not try to move off board
+        assert Position(3, -1) not in valid_moves
 
 
 class TestMoveValidatorBasicValidation:
@@ -28,11 +169,11 @@ class TestMoveValidatorBasicValidation:
         """Test validating simple forward move for white piece"""
         board = Board()
         validator = MoveValidator()
-        move = Move(Position(2, 0), Position(3, 1))
+        move = (Position(2, 0), Position(3, 1))
 
-        result = validator.validate_move(board, move, Color.WHITE)
+        is_move_valid = validator.validate_move(board, move, Color.WHITE)
 
-        assert result is True
+        assert is_move_valid is True
 
     def test_validate_simple_forward_move_black(self):
         """Test validating simple forward move for black piece"""
@@ -123,150 +264,6 @@ class TestMoveValidatorBasicValidation:
         for move in invalid_moves:
             result = validator.validate_move(board, move, Color.WHITE)
             assert result is False
-
-
-class TestMoveValidatorCanSelect:
-    """Test piece selection validation"""
-
-    def test_can_select_own_piece(self):
-        """Test that player can select their own piece"""
-        board = Board()
-        validator = MoveValidator()
-
-        result = validator.can_select(board, Position(2, 0), Color.WHITE)
-
-        assert result is True
-
-    def test_cannot_select_opponent_piece(self):
-        """Test that player cannot select opponent's piece"""
-        board = Board()
-        validator = MoveValidator()
-
-        result = validator.can_select(board, Position(5, 1), Color.WHITE)
-
-        assert result is False
-
-    def test_cannot_select_empty_square(self):
-        """Test that player cannot select empty square"""
-        board = Board()
-        validator = MoveValidator()
-
-        result = validator.can_select(board, Position(3, 3), Color.WHITE)
-
-        assert result is False
-
-    def test_can_select_king(self):
-        """Test that player can select their king"""
-        board = Board()
-        validator = MoveValidator()
-
-        # Create a king
-        king = Piece(Color.WHITE)
-        king.promote_to_king()
-        board.set_piece(Position(4, 4), king)
-
-        result = validator.can_select(board, Position(4, 4), Color.WHITE)
-
-        assert result is True
-
-
-class TestMoveValidatorGetAllValidMoves:
-    """Test valid move generation"""
-
-    def test_get_valid_moves_white_starting_position(self):
-        """Test getting valid moves for white piece at start"""
-        board = Board()
-        validator = MoveValidator()
-
-        valid_moves = validator.get_all_valid_moves(board, Position(2, 0))
-
-        # White piece at (2,0) should be able to move to (3,1)
-        assert Position(3, 1) in valid_moves
-        assert isinstance(valid_moves[Position(3, 1)], Move)
-
-    def test_get_valid_moves_black_starting_position(self):
-        """Test getting valid moves for black piece at start"""
-        board = Board()
-        validator = MoveValidator()
-
-        valid_moves = validator.get_all_valid_moves(board, Position(5, 1))
-
-        # Black piece at (5,1) should be able to move to (4,0) or (4,2)
-        assert Position(4, 0) in valid_moves or Position(4, 2) in valid_moves
-
-    def test_get_valid_moves_empty_square(self):
-        """Test getting valid moves from empty square returns empty dict"""
-        board = Board()
-        validator = MoveValidator()
-
-        valid_moves = validator.get_all_valid_moves(board, Position(3, 3))
-
-        assert valid_moves == {}
-
-    def test_get_valid_moves_blocked_piece(self):
-        """Test piece with no valid moves returns empty dict"""
-        board = Board()
-        validator = MoveValidator()
-
-        # Corner piece that's blocked
-        board.pieces.clear()
-        board.set_piece(Position(0, 0), Piece(Color.BLACK))
-        board.set_piece(Position(1, 1), Piece(Color.BLACK))
-
-        valid_moves = validator.get_all_valid_moves(board, Position(0, 0))
-
-        assert len(valid_moves) == 0
-
-    def test_get_valid_moves_multiple_options(self):
-        """Test piece with multiple valid moves"""
-        board = Board()
-        validator = MoveValidator()
-
-        # Place piece in middle of board with multiple moves
-        board.pieces.clear()
-        board.set_piece(Position(4, 4), Piece(Color.WHITE))
-
-        valid_moves = validator.get_all_valid_moves(board, Position(4, 4))
-
-        # Should have at least 2 forward diagonal moves
-        assert len(valid_moves) >= 2
-
-    def test_get_valid_moves_king_bidirectional(self):
-        """Test king can move in all diagonal directions"""
-        board = Board()
-        validator = MoveValidator()
-
-        # Place king in middle
-        board.pieces.clear()
-        king = Piece(Color.WHITE)
-        king.promote_to_king()
-        board.set_piece(Position(4, 4), king)
-
-        valid_moves = validator.get_all_valid_moves(board, Position(4, 4))
-
-        # King should have 4 diagonal moves (forward and backward)
-        assert len(valid_moves) == 4
-        # Check all four diagonals
-        assert Position(5, 5) in valid_moves  # Forward-right
-        assert Position(5, 3) in valid_moves  # Forward-left
-        assert Position(3, 5) in valid_moves  # Backward-right
-        assert Position(3, 3) in valid_moves  # Backward-left
-
-    def test_get_valid_moves_at_board_edge(self):
-        """Test valid moves for piece at board edge"""
-        board = Board()
-        validator = MoveValidator()
-
-        # White piece at edge
-        board.pieces.clear()
-        board.set_piece(Position(2, 0), Piece(Color.WHITE))
-
-        valid_moves = validator.get_all_valid_moves(board, Position(2, 0))
-
-        # Should only have one move (can't go off board)
-        assert Position(3, 1) in valid_moves
-        # Should not try to move off board
-        assert Position(3, -1) not in valid_moves
 
 
 class TestMoveValidatorCaptures:
@@ -1064,7 +1061,7 @@ class TestMoveValidatorIntegration:
         board.remove_piece(Position(2, 0))
 
         # Validator should recognize position is empty
-        result = validator.can_select(board, Position(2, 0), Color.WHITE)
+        result = validator.is_valid_selection(board, Position(2, 0), Color.WHITE)
         assert result is False
 
     def test_validator_handles_board_modifications(self):

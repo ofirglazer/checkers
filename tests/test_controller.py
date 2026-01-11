@@ -10,17 +10,29 @@ Tests cover:
 - Winner determination
 - Integration with MoveValidator and Board
 - Edge cases and error handling
+
+Comprehensive test suite for GameEngine Observer integration.
+
+Tests cover:
+- Observer attachment/detachment
+- Notification triggering
+- Multiple observers
+- Observer method calls
+- Event timing and ordering
+- Integration with ConsoleViewer
 """
 
 
 from src.checkers_controller import CheckersController
 from src.board import Board
-
 from src.position import Position
 from src.piece import Piece
 from src.move_validator import MoveValidator
+from src.checkers_view_console import CheckersViewConsole
 from src.config import Color, GameState
 import pytest
+from unittest.mock import Mock, MagicMock, call, patch
+
 
 class TestCheckersControllerInitialization:
     """Test CheckersController initialization and setup"""
@@ -97,9 +109,9 @@ class TestCheckersControllerSelection:
         controller = CheckersController()
         position = Position(3, 3)  # Empty square
 
-        result = controller.select_piece(position)
+        is_valid_selection = controller.select_piece(position)
 
-        assert result is False
+        assert is_valid_selection is False
         assert controller.selected_position is None
 
     def test_select_opponent_piece_fails(self):
@@ -108,9 +120,9 @@ class TestCheckersControllerSelection:
         # White's turn, try to select black piece
         position = Position(5, 1)  # Black piece
 
-        result = controller.select_piece(position)
+        is_valid_selection = controller.select_piece(position)
 
-        assert result is False
+        assert is_valid_selection is False
         assert controller.selected_position is None
 
     def test_select_updates_selected_position(self):
@@ -138,9 +150,9 @@ class TestCheckersControllerSelection:
         ]
 
         for pos in invalid_positions:
-            result = controller.select_piece(pos)
+            is_valid_selection = controller.select_piece(pos)
             # Should fail gracefully
-            assert result is False
+            assert is_valid_selection is False
 
 
 class TestCheckersControllerGetValidMoves:
@@ -154,7 +166,7 @@ class TestCheckersControllerGetValidMoves:
 
         valid_moves = controller.get_valid_moves_for_selected()
 
-        assert isinstance(valid_moves, dict)
+        assert isinstance(valid_moves, list)
         assert len(valid_moves) > 0
         # White piece at (2,0) should be able to move to (3,1)
         assert Position(3, 1) in valid_moves
@@ -802,3 +814,96 @@ class TestCheckersControllerBoardIntegration:
 
         # Engine's winner should match board's winner
         assert controller.get_winner() == controller.board.winner()
+
+
+@pytest.fixture
+def mock_observer():
+    """Create a mock observer for testing"""
+    observer = Mock()
+    observer.on_game_state_changed = Mock()
+    observer.on_move_made = Mock()
+    observer.on_piece_selected = Mock()
+    observer.on_game_over = Mock()
+    return observer
+
+
+@pytest.fixture
+def engine():
+    """Create a fresh GameEngine for each test"""
+    return CheckersController()
+
+
+@pytest.fixture
+def console_viewer():
+    """Create a real CheckersViewConsole for integration tests"""
+    return CheckersViewConsole()
+
+
+class TestObserverAttachment:
+    """Test observer attachment and detachment"""
+
+    def test_attach_observer(self, engine, mock_observer):
+        """Test attaching an observer to engine"""
+        engine.attach_observer(mock_observer)
+        assert mock_observer in engine.observers
+
+    def test_attach_multiple_observers(self, engine):
+        """Test attaching multiple observers"""
+        observer1 = Mock()
+        observer2 = Mock()
+        observer3 = Mock()
+
+        engine.attach_observer(observer1)
+        engine.attach_observer(observer2)
+        engine.attach_observer(observer3)
+
+        assert len(engine.observers) == 3
+        assert observer1 in engine.observers
+        assert observer2 in engine.observers
+        assert observer3 in engine.observers
+
+    def test_attach_same_observer_twice(self, engine, mock_observer):
+        """Test attaching same observer twice"""
+        engine.attach_observer(mock_observer)
+        engine.attach_observer(mock_observer)
+
+        # Should be in list (implementation may allow duplicates)
+        assert mock_observer in engine.observers
+
+    def test_detach_observer(self, engine, mock_observer):
+        """Test detaching an observer"""
+        engine.attach_observer(mock_observer)
+        engine.detach_observer(mock_observer)
+
+        assert mock_observer not in engine.observers
+
+    def test_detach_non_existent_observer(self, engine, mock_observer):
+        """Test detaching observer that wasn't attached"""
+        # Should handle gracefully or raise appropriate error
+        try:
+            engine.detach_observer(mock_observer)
+            assert True  # Handled gracefully
+        except ValueError:
+            assert True  # Raises appropriate error
+
+    def test_detach_one_of_multiple_observers(self, engine):
+        """Test detaching one observer while others remain"""
+        observer1 = Mock()
+        observer2 = Mock()
+        observer3 = Mock()
+
+        engine.attach_observer(observer1)
+        engine.attach_observer(observer2)
+        engine.attach_observer(observer3)
+
+        engine.detach_observer(observer2)
+
+        assert observer1 in engine.observers
+        assert observer2 not in engine.observers
+        assert observer3 in engine.observers
+
+    def test_attach_console_viewer(self, engine, console_viewer):
+        """Test attaching real ConsoleViewer"""
+        engine.attach_observer(console_viewer)
+
+        assert console_viewer in engine.observers

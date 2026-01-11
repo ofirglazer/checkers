@@ -7,7 +7,7 @@ This is an checkers game TODO and solver.
 
 MVC Architecture:
 - Model (checkers_model.py): Contains game state, logic, and data structures
-- View (checkers_view.py): Handles all rendering and visual presentation
+- View (checkers_view_console.py): Handles all rendering and visual presentation
 - Controller (checkers_controller.py): Manages input handling and coordinates model/view
 - Main (main.py): Entry point that initializes and starts the game
 
@@ -18,7 +18,7 @@ To run: python main.py
 from src.checkers_controller import CheckersController
 
 if CheckersController.ui_type == 'console':
-    
+
 
 
 def main():

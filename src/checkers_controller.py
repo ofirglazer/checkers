@@ -4,6 +4,7 @@ from src.board import Board
 from src.config import Color, GameState
 from src.position import Position
 from src.move_validator import MoveValidator
+from src.observer import GameObserver
 #from src.orbit_view import OrbitRenderer
 
 
@@ -11,9 +12,7 @@ from src.move_validator import MoveValidator
 class GameEngine {
         -validator: MoveValidator
         -state: GameState
-        
         +make_move(from_pos, to_pos) bool
-        +get_valid_moves_for_selected() dict
         +get_winner() Color
         +get_current_player() Color
         +reset_game()
@@ -32,6 +31,7 @@ class CheckersController:
         self.state = GameState.PLAYING
         self.current_player = Color.WHITE
         self.selected_position = None
+        self.observers = []  # List of observers
 
         '''
         self.config = config or OrbitConfig()
@@ -49,6 +49,15 @@ class CheckersController:
         if is_valid_selection:
             self.selected_position = position
         return is_valid_selection
+
+    def get_valid_moves_for_selected(self) -> List[Tuple[Position, Position]]:
+        return self.validator.get_all_valid_moves(self.board, self.selected_position)
+
+    def attach_observer(self, observer: GameObserver) -> None:
+        self.observers.append(observer)
+
+    def detach_observer(self, observer: GameObserver) -> None:
+        self.observers.remove(observer)
 
     def handle_events(self):
         """Process all pygame events"""

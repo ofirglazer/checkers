@@ -29,7 +29,8 @@ class Board:
 
     def get_piece(self, position: Position) -> Piece:
         if position.valid is False:
-            raise ValueError("Trying to get a piece from an invalid position")
+            return None
+            # raise ValueError("Trying to get a piece from an invalid position")
         return self.pieces.get(position)
 
     def remove_piece(self, position) -> None:

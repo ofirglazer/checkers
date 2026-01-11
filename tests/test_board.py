@@ -455,8 +455,8 @@ class TestBoard:
 
         for pos in invalid_positions:
             assert pos.valid is False
-            with pytest.raises(ValueError):
-                result = board.get_piece(pos)
+            piece = board.get_piece(pos)
+            assert piece is None
 
     def test_remove_all_pieces(self):
         """Test removing all pieces from board"""
