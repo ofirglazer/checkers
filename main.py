@@ -16,9 +16,7 @@ To run: python main.py
 # TODO remove all comments from previous architecture
 # TODO add solver to specific status
 from src.checkers_controller import CheckersController
-
-if CheckersController.ui_type == 'console':
-
+from src.checkers_view_console import CheckersViewConsole
 
 
 def main():
@@ -26,13 +24,14 @@ def main():
     print(__doc__)
 
     controller = CheckersController()
+    observer = CheckersViewConsole()
+    controller.attach_observer(observer)
     controller.run()
-
 
 
 ##################
 
-import pygame
+# import pygame
 
 # FPS = 12
 # WIN = pygame.display.set_mode((WIDTH, HEIGHT))

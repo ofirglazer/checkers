@@ -5,16 +5,30 @@ from src.observer import GameObserver
 
 
 class CheckersViewConsole(GameObserver):
-    def on_game_state_changed(self, board: Board, current_player: Color, state: GameState):
-        self.print_board()
+    @staticmethod
+    def on_game_state_changed(board: Board, current_player: Color, state: GameState):
+        CheckersViewConsole.print_board(board)
 
-    def print_board(board):
+    @staticmethod
+    def get_selected_piece() -> Position:
+        str = input("Enter row and column of selected piece (e.g. 24 for row=2, col=4: ")
+        row = int(str) // 10
+        col = int(str) % 10
+        return Position(row, col)
+
+    @staticmethod
+    def on_piece_selected(board: Board, position: Position, valid_moves: List[Position]):
+        CheckersViewConsole.print_board(board, valid_moves)
+
+    @staticmethod
+    def print_board(board: Board, valid_moves: List[Tuple[Position, Position]] = None) -> None:
 
         empty = '.'
         red_piece = "r"
         white_piece = "w"
         red_king = "R"
         white_king = "W"
+        valid_move = "O"
         horizontal = "  +" + "---+" * 8
 
         # Column header
@@ -31,7 +45,10 @@ class CheckersViewConsole(GameObserver):
                 else:
                     piece = board.get_piece(Position(r, c))
                     if piece is None:
-                        piece_shape = empty
+                        if valid_moves is not None and Position(r, c) in valid_moves:
+                            piece_shape = valid_move
+                        else:
+                            piece_shape = empty
                     elif piece.color == Color.WHITE:
                         piece_shape = white_piece
                     else:
@@ -40,3 +57,10 @@ class CheckersViewConsole(GameObserver):
                 print(cell + "|", end="")
             print()
         print(horizontal)
+
+
+if __name__ == '__main__':
+    console = CheckersViewConsole()
+    board = Board()
+    position = console.get_selected_piece(board, Color.WHITE, GameState.PLAYING)
+    print(position)

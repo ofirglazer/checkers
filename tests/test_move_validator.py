@@ -15,7 +15,7 @@ Tests cover:
 from src.move_validator import MoveValidator
 from src.board import Board
 from src.position import Position
-from src.config import Color
+from src.config import Color, CheckersConfig
 from src.piece import Piece
 import pytest
 
@@ -122,7 +122,7 @@ class TestMoveValidatorGetAllValidMoves:
         valid_moves = validator.get_all_valid_moves(board, Position(4, 4))
 
         # Should have at least 2 forward diagonal moves
-        assert len(valid_moves) >= 2
+        assert len(valid_moves) == 2
 
     def test_get_valid_moves_king_bidirectional(self):
         """Test king can move in all diagonal directions"""
@@ -137,9 +137,22 @@ class TestMoveValidatorGetAllValidMoves:
 
         valid_moves = validator.get_all_valid_moves(board, Position(4, 4))
 
-        # King should have 4 diagonal moves (forward and backward)
-        assert len(valid_moves) == 4
-        # Check all four diagonals
+        if CheckersConfig.king_movement == 'single_step':
+            # original rule - King can have 4 diagonal moves (forward and backward)
+            assert len(valid_moves) == 4
+        else:
+            # frequent rule - King can have many diagonal moves (forward and backward)
+            assert len(valid_moves) == 13
+            assert Position(6, 2) in valid_moves
+            assert Position(7, 1) in valid_moves
+            assert Position(6, 6) in valid_moves
+            assert Position(7, 7) in valid_moves
+            assert Position(2, 2) in valid_moves
+            assert Position(1, 1) in valid_moves
+            assert Position(0, 0) in valid_moves
+            assert Position(2, 6) in valid_moves
+            assert Position(1, 7) in valid_moves
+        # Check all four diagonals in any case
         assert Position(5, 5) in valid_moves  # Forward-right
         assert Position(5, 3) in valid_moves  # Forward-left
         assert Position(3, 5) in valid_moves  # Backward-right

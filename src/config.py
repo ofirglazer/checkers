@@ -12,6 +12,7 @@ class GameState(Enum):
     PLAYING = 1
     WHITE_WINS = 2
     BLACK_WINS = 3
+    NEW_GAME = 4
 
 
 @dataclass
@@ -20,6 +21,7 @@ class CheckersConfig:
 
     board_size = 8
     ui_type = 'console'  # 'pygame'
+    king_movement = 'multi_steps'  # 'single_step'
 
     # Display
     # screen_width: int = 600

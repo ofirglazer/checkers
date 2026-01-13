@@ -28,7 +28,7 @@ class Board:
                         self.black_count += 1
 
     def get_piece(self, position: Position) -> Piece:
-        if position.valid is False:
+        if position is None or position.valid is False:
             return None
             # raise ValueError("Trying to get a piece from an invalid position")
         return self.pieces.get(position)

@@ -5,7 +5,6 @@ from src.config import Color, GameState
 from src.position import Position
 from src.move_validator import MoveValidator
 from src.observer import GameObserver
-#from src.orbit_view import OrbitRenderer
 
 
 '''
@@ -24,11 +23,11 @@ class GameEngine {
 class CheckersController:
     """Handles user input and coordinates between model and view."""
 
-    def __init__(self, config: OrbitConfig = None):
+    def __init__(self):
 
         self.board = Board()
         self.validator = MoveValidator()
-        self.state = GameState.PLAYING
+        self.state = GameState.NEW_GAME
         self.current_player = Color.WHITE
         self.selected_position = None
         self.observers = []  # List of observers
@@ -58,6 +57,7 @@ class CheckersController:
 
     def detach_observer(self, observer: GameObserver) -> None:
         self.observers.remove(observer)
+
 
     def handle_events(self):
         """Process all pygame events"""
@@ -105,7 +105,16 @@ class CheckersController:
 
     def run(self):
         """Main game loop."""
-        self.autopilot.enable()
+
+        for observer in self.observers:
+            observer.on_game_state_changed(self.board, self.current_player, self.state)
+
+        selection = observer.get_selected_piece()
+        self.select_piece(selection)
+        valid_moves = self.get_valid_moves_for_selected()
+        observer.on_piece_selected(self.board, selection, valid_moves)
+    '''
+        #self.autopilot.enable()
 
         while self.running:
 
@@ -142,7 +151,7 @@ class CheckersController:
     def cleanup():
         """Clean up resources."""
         pygame.quit()
-        print("Game ended")
+        print("Game ended") '''
 
 
 # if __name__ == '__main__':

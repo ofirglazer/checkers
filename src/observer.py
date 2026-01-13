@@ -12,14 +12,20 @@ class GameObserver(ABC):
     def on_game_state_changed(self, board: Board, current_player: Color, state: GameState):
         pass
 
+    @abstractmethod
+    def get_selected_piece(self) -> Position:
+        pass
+
     '''
     @abstractmethod
     def on_move_made(self, from_pos: Position, to_pos: Position, captured):
         pass
+    '''
 
     @abstractmethod
-    def on_piece_selected(self, position: Position, valid_moves: List[Tuple[Position, Position]]):
+    def on_piece_selected(self, board: Board, position: Position, valid_moves: List[Tuple[Position, Position]]):
         pass
+    '''
 
     @abstractmethod
     def on_game_over(self, winner):

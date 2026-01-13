@@ -177,21 +177,18 @@ class TestCheckersControllerGetValidMoves:
 
         valid_moves = controller.get_valid_moves_for_selected()
 
-        assert valid_moves == {}
+        assert valid_moves == []
 
     def test_get_valid_moves_returns_move_objects(self):
-        """Test that valid moves dict contains Move objects"""
+        """Test that valid moves list contains position objects"""
         controller = CheckersController()
         position = Position(2, 0)
         controller.select_piece(position)
 
         valid_moves = controller.get_valid_moves_for_selected()
 
-        for dest_pos, move in valid_moves.items():
-            assert isinstance(dest_pos, Position)
-            assert isinstance(move, Move)
-            assert move.get_from() == position
-            assert move.get_to() == dest_pos
+        for move in valid_moves:
+            assert isinstance(move, Position)
 
 
 class TestCheckersControllerMakeMove:
@@ -907,3 +904,48 @@ class TestObserverAttachment:
         engine.attach_observer(console_viewer)
 
         assert console_viewer in engine.observers
+
+
+class TestObserverNotificationOnGameStateChange:
+    """Test observer notifications on game state changes"""
+
+    def test_notifies_state_on_turn_change(self, engine, mock_observer):
+        """Test observer notified when turn changes"""
+        engine.attach_observer(mock_observer)
+
+        engine.make_move(Position(2, 0), Position(3, 1))
+
+        # Should notify state change (turn switched)
+        assert mock_observer.on_game_state_changed.called
+
+    def test_notifies_with_current_player(self, engine, mock_observer):
+        """Test observer receives current player in notification"""
+        engine.attach_observer(mock_observer)
+
+        engine.make_move(Position(2, 0), Position(3, 1))
+
+        call_args = mock_observer.on_game_state_changed.call_args
+        current_player = call_args[0][1]
+        assert current_player == Color.BLACK  # After white's move
+
+    def test_notifies_with_game_state(self, engine, mock_observer):
+        """Test observer receives game state in notification"""
+        engine.attach_observer(mock_observer)
+
+        engine.make_move(Position(2, 0), Position(3, 1))
+
+        call_args = mock_observer.on_game_state_changed.call_args
+        game_state = call_args[0][2]
+        assert game_state == GameState.PLAYING
+
+    def test_notifies_with_board_reference(self, engine, mock_observer):
+        """Test observer receives board reference"""
+        engine.attach_observer(mock_observer)
+
+        engine.make_move(Position(2, 0), Position(3, 1))
+
+        call_args = mock_observer.on_game_state_changed.call_args
+        board = call_args[0][0]
+        assert board is not None
+        assert board == engine.board or board is engine.board
+
