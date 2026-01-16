@@ -1,7 +1,9 @@
 from src.board import Board
 from src.position import Position
+from src.move import Move
 from src.config import Color, GameState
 from src.observer import GameObserver
+from typing import List, Tuple
 
 
 class CheckersViewConsole(GameObserver):
@@ -12,6 +14,13 @@ class CheckersViewConsole(GameObserver):
     @staticmethod
     def get_selected_piece() -> Position:
         str = input("Enter row and column of selected piece (e.g. 24 for row=2, col=4: ")
+        row = int(str) // 10
+        col = int(str) % 10
+        return Position(row, col)
+
+    @staticmethod
+    def get_selected_move() -> Move:
+        str = input("Enter row and column of move detination(e.g. 24 for row=2, col=4: ")
         row = int(str) // 10
         col = int(str) % 10
         return Position(row, col)

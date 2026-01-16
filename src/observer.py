@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from src.board import Board
 from src.config import Color, GameState
 from src.position import Position
+from src.move import Move
 from typing import List, Tuple
 
 
@@ -14,6 +15,10 @@ class GameObserver(ABC):
 
     @abstractmethod
     def get_selected_piece(self) -> Position:
+        pass
+
+    @abstractmethod
+    def get_selected_move(self) -> Move:
         pass
 
     '''

@@ -15,6 +15,7 @@ Tests cover:
 from src.move_validator import MoveValidator
 from src.board import Board
 from src.position import Position
+from src.move import Move
 from src.config import Color, CheckersConfig
 from src.piece import Piece
 import pytest
@@ -289,33 +290,60 @@ class TestMoveValidatorCaptures:
 
         # Setup: White piece at (3,1), Black at (4,2), empty at (5,3)
         board.pieces.clear()
-        board.set_piece(Position(3, 1), Piece(Color.WHITE))
-        board.set_piece(Position(4, 2), Piece(Color.BLACK))
+        pos_white = Position(3, 1)
+        pos_black = Position(4, 2)
+        pos_landing = Position(5, 3)
+        board.set_piece(pos_white, Piece(Color.WHITE))
+        board.set_piece(pos_black, Piece(Color.BLACK))
 
-        move = Move(Position(3, 1), Position(5, 3))
-        move.add_capture(Position(4, 2))
-
+        move = Move(pos_white, pos_landing)
+        move.captured_pieces = pos_black
+        # TODO there is no validate_move method
         result = validator.validate_move(board, move, Color.WHITE)
 
         assert result is True
 
-    def test_get_valid_moves_includes_captures(self):
-        """Test that valid moves include capture moves"""
+    def test_get_valid_moves_includes_captures_white(self):
+        """Test that valid white moves include capture moves"""
         board = Board()
         validator = MoveValidator()
 
         # Setup capture scenario
         board.pieces.clear()
-        board.set_piece(Position(3, 1), Piece(Color.WHITE))
-        board.set_piece(Position(4, 2), Piece(Color.BLACK))
+        pos_white = Position(3, 1)
+        pos_black = Position(4, 2)
+        pos_landing = Position(5, 3)
+        board.set_piece(pos_white, Piece(Color.WHITE))
+        board.set_piece(pos_black, Piece(Color.BLACK))
 
-        valid_moves = validator.get_all_valid_moves(board, Position(3, 1))
+        valid_moves = validator.get_all_valid_moves(board, pos_white)
 
         # Should have capture move to (5,3)
-        assert Position(5, 3) in valid_moves
-        capture_move = valid_moves[Position(5, 3)]
-        assert capture_move.is_capture() is True
-        assert Position(4, 2) in capture_move.get_captured()
+        assert Move(pos_white, pos_landing, is_capture=True) in valid_moves
+        capture_move = valid_moves[0]
+        assert capture_move.is_capture is True
+        assert pos_black in capture_move.captured_pieces
+
+    def test_get_valid_moves_includes_captures_black(self):
+        """Test that valid black moves include capture moves"""
+        board = Board()
+        validator = MoveValidator()
+
+        # Setup capture scenario
+        board.pieces.clear()
+        pos_landing = Position(3, 1)
+        pos_white = Position(4, 2)
+        pos_black = Position(5, 3)
+        board.set_piece(pos_white, Piece(Color.WHITE))
+        board.set_piece(pos_black, Piece(Color.BLACK))
+
+        valid_moves = validator.get_all_valid_moves(board, pos_black)
+
+        # Should have capture move to (3, 1)
+        assert Move(pos_black, pos_landing, is_capture=True) in valid_moves
+        capture_move = valid_moves[0]
+        assert capture_move.is_capture is True
+        assert pos_white in capture_move.captured_pieces
 
     def test_cannot_capture_own_piece(self):
         """Test that pieces cannot capture their own color"""
@@ -324,13 +352,16 @@ class TestMoveValidatorCaptures:
 
         # Setup: Two white pieces
         board.pieces.clear()
-        board.set_piece(Position(3, 1), Piece(Color.WHITE))
-        board.set_piece(Position(4, 2), Piece(Color.WHITE))
+        pos_white1 = Position(3, 1)
+        pos_white2 = Position(4, 2)
+        pos_landing = Position(5, 3)
+        board.set_piece(pos_white1, Piece(Color.WHITE))
+        board.set_piece(pos_white2, Piece(Color.WHITE))
 
-        valid_moves = validator.get_all_valid_moves(board, Position(3, 1))
+        valid_moves = validator.get_all_valid_moves(board, pos_white1)
 
         # Should NOT have jump over own piece
-        assert Position(5, 3) not in valid_moves
+        assert pos_landing not in valid_moves
 
     def test_capture_requires_empty_landing(self):
         """Test that capture requires empty landing square"""
@@ -339,14 +370,17 @@ class TestMoveValidatorCaptures:
 
         # Setup: pieces blocking capture landing
         board.pieces.clear()
-        board.set_piece(Position(3, 1), Piece(Color.WHITE))
-        board.set_piece(Position(4, 2), Piece(Color.BLACK))
-        board.set_piece(Position(5, 3), Piece(Color.WHITE))  # Blocking
+        pos_white = Position(3, 1)
+        pos_black = Position(4, 2)
+        pos_landing = Position(5, 3)
+        board.set_piece(pos_white, Piece(Color.WHITE))
+        board.set_piece(pos_black, Piece(Color.BLACK))
+        board.set_piece(pos_landing, Piece(Color.WHITE))  # Blocking
 
-        valid_moves = validator.get_all_valid_moves(board, Position(3, 1))
+        valid_moves = validator.get_all_valid_moves(board, pos_white)
 
         # Cannot capture because landing square is occupied
-        assert Position(5, 3) not in valid_moves
+        assert pos_landing not in valid_moves
 
     def test_backward_capture_for_king(self):
         """Test that king can capture backward"""
@@ -373,17 +407,22 @@ class TestMoveValidatorCaptures:
 
         # Setup: White piece with two capture options
         board.pieces.clear()
-        board.set_piece(Position(4, 4), Piece(Color.WHITE))
-        board.set_piece(Position(5, 5), Piece(Color.BLACK))  # Right
-        board.set_piece(Position(5, 3), Piece(Color.BLACK))  # Left
+        pos_white = Position(4, 4)
+        pos_black1 = Position(5, 5)
+        pos_landing1 = Position(6, 6)
+        pos_black2 = Position(5, 3)
+        pos_landing2 = Position(6, 2)
+        board.set_piece(pos_white, Piece(Color.WHITE))
+        board.set_piece(pos_black1, Piece(Color.BLACK))
+        board.set_piece(pos_black2, Piece(Color.BLACK))
 
-        valid_moves = validator.get_all_valid_moves(board, Position(4, 4))
+        valid_moves = validator.get_all_valid_moves(board, pos_white)
 
         # Should have both captures
-        assert Position(6, 6) in valid_moves
-        assert Position(6, 2) in valid_moves
-        assert valid_moves[Position(6, 6)].is_capture() is True
-        assert valid_moves[Position(6, 2)].is_capture() is True
+        assert Move(pos_white, pos_landing1, is_capture=True) in valid_moves
+        assert Move(pos_white, pos_landing2, is_capture=True) in valid_moves
+        assert valid_moves[0].is_capture is True
+        assert valid_moves[1].is_capture is True
 
 
 class TestMoveValidatorMultiJump:
@@ -396,18 +435,22 @@ class TestMoveValidatorMultiJump:
 
         # Setup: White can jump two black pieces in sequence
         board.pieces.clear()
-        board.set_piece(Position(2, 2), Piece(Color.WHITE))
-        board.set_piece(Position(3, 3), Piece(Color.BLACK))  # First jump
-        board.set_piece(Position(5, 5), Piece(Color.BLACK))  # Second jump
+        pos_white = Position(2, 6)
+        pos_black1 = Position(3, 5)
+        pos_landing1 = Position(4, 4)
+        pos_black2 = Position(5, 3)
+        pos_landing2 = Position(6, 2)
+        board.set_piece(pos_white, Piece(Color.WHITE))
+        board.set_piece(pos_black1, Piece(Color.BLACK))  # First jump
+        board.set_piece(pos_black2, Piece(Color.BLACK))  # Second jump
 
-        valid_moves = validator.get_all_valid_moves(board, Position(2, 2))
+        valid_moves = validator.get_all_valid_moves(board, pos_white)
 
-        # Should have multi-jump to (6, 6)
+        # Should have multi-jump to (6, 2)
         # Implementation may vary - might be single move or require multiple moves
         # Check if multi-jump is returned as single move
-        if Position(6, 6) in valid_moves:
-            multi_jump = valid_moves[Position(6, 6)]
-            assert len(multi_jump.get_captured()) == 2
+        assert Move(pos_landing1, pos_landing2, is_capture=True) in valid_moves
+        assert len(valid_moves) == 2
 
     def test_multi_jump_with_branching(self):
         """Test multi-jump with multiple path options"""
@@ -416,16 +459,24 @@ class TestMoveValidatorMultiJump:
 
         # Setup: piece can capture, then has choice of second capture
         board.pieces.clear()
-        board.set_piece(Position(2, 2), Piece(Color.WHITE))
-        board.set_piece(Position(3, 3), Piece(Color.BLACK))
-        board.set_piece(Position(5, 5), Piece(Color.BLACK))  # Path A
-        board.set_piece(Position(5, 1), Piece(Color.BLACK))  # Path B
+        pos_white = Position(2, 2)
+        pos_black1 = Position(3, 3)
+        pos_landing1 = Position(4, 4)
+        pos_black2a = Position(5, 5)
+        pos_landing2a = Position(6, 6)
+        pos_black2b = Position(5, 3)
+        pos_landing2b = Position(6, 2)
+        board.set_piece(pos_white, Piece(Color.WHITE))
+        board.set_piece(pos_black1, Piece(Color.BLACK))  # First jump
+        board.set_piece(pos_black2a, Piece(Color.BLACK))  # Path A
+        board.set_piece(pos_black2b, Piece(Color.BLACK))  # Path B
 
-        valid_moves = validator.get_all_valid_moves(board, Position(2, 2))
+        valid_moves = validator.get_all_valid_moves(board, pos_white)
 
         # Should have options for both paths
         # Exact implementation depends on how multi-jumps are handled
-        assert len(valid_moves) > 0
+        assert Move(pos_landing1, pos_landing2a, is_capture=True) in valid_moves
+        assert Move(pos_landing1, pos_landing2b, is_capture=True) in valid_moves
 
     def test_multi_jump_king(self):
         """Test multi-jump sequence for king piece"""
@@ -452,14 +503,19 @@ class TestMoveValidatorMultiJump:
 
         # Setup: Jump sequence that reaches edge
         board.pieces.clear()
-        board.set_piece(Position(4, 4), Piece(Color.WHITE))
-        board.set_piece(Position(5, 5), Piece(Color.BLACK))
-        board.set_piece(Position(7, 7), Piece(Color.BLACK))  # Can't jump beyond
+        pos_white = Position(4, 4)
+        pos_black1 = Position(5, 5)
+        pos_landing = Position(6, 6)
+        pos_black2 = Position(7, 7)
+        board.set_piece(pos_white, Piece(Color.WHITE))
+        board.set_piece(pos_black1, Piece(Color.BLACK))
+        board.set_piece(pos_black2, Piece(Color.BLACK))  # Can't jump beyond
 
-        valid_moves = validator.get_all_valid_moves(board, Position(4, 4))
+        valid_moves = validator.get_all_valid_moves(board, pos_white)
 
         # Should have first jump but not beyond board
-        assert Position(6, 6) in valid_moves
+        assert Move(pos_white, pos_landing, is_capture=True) in valid_moves
+        assert len(valid_moves) == 1
 
 
 class TestMoveValidatorMustCapture:

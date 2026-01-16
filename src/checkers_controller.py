@@ -27,20 +27,16 @@ class CheckersController:
 
         self.board = Board()
         self.validator = MoveValidator()
-        self.state = GameState.NEW_GAME
+        self.state = GameState.PLAYING
         self.current_player = Color.WHITE
         self.selected_position = None
         self.observers = []  # List of observers
 
         '''
-        self.config = config or OrbitConfig()
-        self.model = GameModel(self.config)
-        self.view = OrbitRenderer(self.config)
         self.clock = pygame.time.Clock()
         self.fps = self.config.fps
-        self.running = True
-        self.paused = self.config.paused
-        self.autopilot = RendezvousAutopilot(self.config.mu, self.config.dt, self.config.delta_v)'''
+        self.running = True'''
+
 
     def select_piece(self, position: Position) -> bool:
         """ User selects piece to move, controller returns validity of selection"""
@@ -74,85 +70,43 @@ class CheckersController:
                 elif event.key == pygame.K_UP:
                     self.model.change_orbit(True)
 
-    @staticmethod
-    def should_execute_autopilot_burn(game_model: 'GameModel', autopilot: RendezvousAutopilot) -> Optional[bool]:
-        """
-        Get autopilot burn recommendation for GameModel.
-
-        Args:
-            game_model: Your existing GameModel instance
-            autopilot: RendezvousAutopilot instance
-
-        Returns:
-            True for prograde burn, False for retrograde, None for no burn
-        """
-        if not autopilot.enabled:
-            return None
-
-        if game_model.caught_satellite or game_model.collided_with_star:
-            return None
-
-        # Extract data from GameModel ships
-        ship_state, ship_elements = game_model.extract_orbital_data(game_model.ships[0])
-        target_state, target_elements = game_model.extract_orbital_data(game_model.ships[1])
-
-        # Process through autopilot
-        analysis = autopilot.process_orbital_data(ship_state, target_state, ship_elements, target_elements)
-        burn_command, reasoning = autopilot.compute_burn_command(analysis)
-        print(reasoning)
-
-        return burn_command
-
     def run(self):
         """Main game loop."""
 
-        for observer in self.observers:
-            observer.on_game_state_changed(self.board, self.current_player, self.state)
+        # Initial game state for observers
+        # TODO
 
-        selection = observer.get_selected_piece()
-        self.select_piece(selection)
-        valid_moves = self.get_valid_moves_for_selected()
-        observer.on_piece_selected(self.board, selection, valid_moves)
-    '''
-        #self.autopilot.enable()
+        while self.state == GameState.PLAYING:
 
-        while self.running:
+            if self.current_player == Color.WHITE:
+                # Observers display board
+                for observer in self.observers:
+                    observer.on_game_state_changed(self.board, self.current_player, self.state)
 
-            # Handle input
-            self.handle_events()
+                # Select piece by observers
+                selected_piece = observer.get_selected_piece()
+                self.select_piece(selected_piece)
+                # Display valid moves for the selected piece
+                valid_moves = self.get_valid_moves_for_selected()
+                observer.on_piece_selected(self.board, selected_piece, valid_moves)
 
-            if not self.paused:
-
-                # run autopilot cycle
-                if self.autopilot.enabled:
-                    # Get autopilot recommendation
-                    burn_cmd = self.should_execute_autopilot_burn(self.model, self.autopilot)
-                    if burn_cmd is not None:
-                        self.model.change_orbit(burn_cmd)
-
-                # Update game logic
-                self.model.update()
-
-                # Render
-                self.view.render(self.model)
-
-                # exit conditions
-                if self.model.collided_with_star:
-                    self.running = False
-                    print("Collided with star, game over")
-                if self.model.caught_satellite:
-                    self.running = False
-                    print("Caught the satellite, you win")
-
-                self.clock.tick(self.fps)
-        self.cleanup()
-
-    @staticmethod
-    def cleanup():
-        """Clean up resources."""
-        pygame.quit()
-        print("Game ended") '''
+                # Get and perform movement
+                selected_move = observer.get_selected_move()
+                if selected_move in valid_moves:
+                    pass
+                else:  # invalid move
+                    self.selected_position = None
+                    observer.on_game_state_changed(self.board, self.current_player, self.state)
 
 
-# if __name__ == '__main__':
-    # main()
+
+            # self.clock.tick(self.fps)
+            @staticmethod
+            def cleanup():
+                """Clean up resources."""
+                pygame.quit()
+                print("Game ended")
+
+
+if __name__ == '__main__':
+    main()

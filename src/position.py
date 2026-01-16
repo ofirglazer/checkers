@@ -1,5 +1,5 @@
-from typing import Self
 from src.config import CheckersConfig
+# from typing import Self  # only supported in Python 3.11+
 
 
 class Position:
@@ -18,10 +18,22 @@ class Position:
         return False
         # noinspection PyUnresolvedReferences
 
-    def distance(self, other: Self) -> int:
+    def ne(self):
+        return Position(self.row + 1, self.col + 1)
+
+    def nw(self):
+        return Position(self.row + 1, self.col - 1)
+
+    def se(self):
+        return Position(self.row - 1, self.col + 1)
+
+    def sw(self):
+        return Position(self.row - 1, self.col - 1)
+
+    def distance(self, other) -> int:  # : Self
         pass
 
-    def __eq__(self, other: Self) -> bool:
+    def __eq__(self, other) -> bool:  # : Self
         if self.row == other.row and self.col == other.col:
             return True
         return False
