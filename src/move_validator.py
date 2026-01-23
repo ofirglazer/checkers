@@ -114,7 +114,7 @@ class MoveValidator:
             dest_pos = Position(dest_row, position.col - 1)
             if dest_pos.valid:  # position is valid
                 if board.is_empty(dest_pos):  # and square is empty
-                    valid_moves.append(dest_pos)
+                    valid_moves.append(Move(position, dest_pos))
                 # elif board.get_piece(dest_pos).color != piece.color and
                     # board.is_empty():  # posssible capture
 
@@ -124,7 +124,7 @@ class MoveValidator:
             dest_pos = Position(dest_row, position.col + 1)
             if dest_pos.valid:  # position is valid
                 if board.is_empty(dest_pos):  # and square is empty
-                    valid_moves.append(dest_pos)
+                    valid_moves.append(Move(position, dest_pos))
 
         else:  # piece is king
 

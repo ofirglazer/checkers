@@ -14,11 +14,11 @@ class GameObserver(ABC):
         pass
 
     @abstractmethod
-    def get_selected_piece(self) -> Position:
+    def get_selected_origin(self) -> Position:
         pass
 
     @abstractmethod
-    def get_selected_move(self) -> Move:
+    def get_selected_dest(self) -> Position:
         pass
 
     '''

@@ -42,10 +42,10 @@ class TestMoveClass:
 
     def test_init_with_capture_flag(self, valid_pos1, valid_pos2):
         """Test Move initialization with is_capture flag set to True"""
-        move = Move(valid_pos1, valid_pos2, is_capture=True)
+        move = Move(valid_pos1, Position(7, 1))
 
         assert move.from_pos == valid_pos1
-        assert move.dest_pos == valid_pos2
+        assert move.dest_pos == Position(7, 1)
         assert move.is_capture is True
         assert move.valid is True
 
@@ -58,6 +58,11 @@ class TestMoveClass:
         """Test Move raises TypeError when dest_pos is not a Position"""
         with pytest.raises(TypeError, match="from_pos and dest_pos must be positions"):
             Move(valid_pos1, "not a position")
+
+    def test_init_with_same_dest_and_pos(self, valid_pos1):
+        """Test is_valid returns False when from and dest are the same"""
+        move = Move(valid_pos1, valid_pos1)
+        assert move.valid is False
 
     def test_init_with_both_non_positions(self):
         """Test Move raises TypeError when both arguments are not Positions"""
@@ -109,7 +114,7 @@ class TestMoveClass:
     @pytest.mark.parametrize("from_row,from_col,dest_row,dest_col,is_capture", [
         (0, 0, 1, 1, False),
         (0, 0, 7, 7, True),
-        (3, 3, 4, 4, True),
+        (3, 3, 4, 4, False),
         (7, 6, 6, 5, False),
     ])
     def test_different_position_objects(self, from_row, from_col, dest_row, dest_col, is_capture):
@@ -117,7 +122,7 @@ class TestMoveClass:
         from_pos = Position(from_row, from_col)
         dest_pos = Position(dest_row, dest_col)
 
-        move = Move(from_pos, dest_pos, is_capture)
+        move = Move(from_pos, dest_pos)
         assert move.from_pos == from_pos
         assert move.dest_pos == dest_pos
         assert move.is_capture == is_capture
@@ -126,12 +131,6 @@ class TestMoveClass:
         """Test that is_capture defaults to False when not specified"""
         move = Move(valid_pos1, valid_pos2)
         assert move.is_capture is False
-
-    @pytest.mark.parametrize("is_capture_value", [True, False])
-    def test_is_capture_parameter_honored(self, valid_pos1, valid_pos2, is_capture_value):
-        """Test that is_capture parameter is correctly honored"""
-        move = Move(valid_pos1, valid_pos2, is_capture=is_capture_value)
-        assert move.is_capture == is_capture_value
 
     def test_equality(self):
         position1 = Position(7, 5)

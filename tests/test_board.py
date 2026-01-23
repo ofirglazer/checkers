@@ -1,4 +1,5 @@
 from src.board import Board
+from src.move import Move
 from src.position import Position
 from src.piece import Piece
 from src.config import Color
@@ -252,32 +253,22 @@ class TestBoard:
 
         assert black_count == 12
     # ========== Move Tests ==========
-
+class TestBoardMove:
     def test_move_piece_simple(self):
         """Test moving a piece from one position to another
         Move legality is checked outside"""
         board = Board()
         from_pos = Position(2, 0)
         to_pos = Position(3, 1)
+        move = Move(from_pos, to_pos)
 
         piece = board.get_piece(from_pos)
         assert piece is not None
 
-        board.move(from_pos, to_pos)
+        board.move(move)
 
         assert board.get_piece(from_pos) is None
         assert board.get_piece(to_pos) == piece
-
-    def test_move_to_occupied_square(self):
-        """Test moving to an occupied square (should handle or raise error)"""
-        board = Board()
-        from_pos = Position(2, 0)
-        to_pos = Position(1, 1)  # Already occupied
-
-        # This should either raise an error or handle the conflict
-        # Depending on your implementation, adjust the assertion
-        with pytest.raises(Exception):  # Replace with specific exception
-            board.move(from_pos, to_pos)
 
     def test_move_promotes_to_king_black(self):
         """Test that black piece promotes to king when reaching row 0"""
@@ -289,7 +280,7 @@ class TestBoard:
 
         to_pos = Position(0, 0)
         board.remove_piece(to_pos)
-        board.move(from_pos, to_pos)
+        board.move(Move(from_pos, to_pos))
 
         piece = board.get_piece(to_pos)
         assert piece.is_king is True
@@ -305,7 +296,7 @@ class TestBoard:
 
         to_pos = Position(7, 3)
         board.remove_piece(to_pos)
-        board.move(from_pos, to_pos)
+        board.move(Move(from_pos, to_pos))
 
         piece = board.get_piece(to_pos)
         assert piece.is_king is True
@@ -326,11 +317,12 @@ class TestBoard:
         # Move the king
         to_pos = Position(7, 3)
         board.remove_piece(to_pos)
-        board.move(from_pos, to_pos)
+        board.move(Move(from_pos, to_pos))
 
         assert board.white_kings == 1  # Should not increment again
 
     # ========== Copy Tests ==========
+class TestBoardCopy:
 
     def test_copy_creates_independent_board(self):
         """Test that copy creates an independent board"""

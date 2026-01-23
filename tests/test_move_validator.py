@@ -72,24 +72,26 @@ class TestMoveValidatorGetAllValidMoves:
         """Test getting valid moves for white piece at start"""
         board = Board()
         validator = MoveValidator()
+        pos_from = Position(2, 0)
 
-        valid_moves = validator.get_all_valid_moves(board, Position(2, 0))
+        valid_moves = validator.get_all_valid_moves(board, pos_from)
 
         # White piece at (2,0) should be able to move to (3,1)
-        assert Position(3, 1) in valid_moves
+        assert Move(pos_from, Position(3, 1)) in valid_moves
         assert len(valid_moves) == 1
-        # assert isinstance(valid_moves[Position(3, 1)], Move)
+        assert isinstance(valid_moves[0], Move)
 
     def test_get_valid_moves_black_starting_position(self):
         """Test getting valid moves for black piece at start"""
         board = Board()
         validator = MoveValidator()
+        pos_from = Position(5, 1)
 
-        valid_moves = validator.get_all_valid_moves(board, Position(5, 1))
+        valid_moves = validator.get_all_valid_moves(board, pos_from)
 
         # Black piece at (5,1) should be able to move to (4,0) or (4,2)
-        assert Position(4, 0) in valid_moves
-        assert Position(4, 2) in valid_moves
+        assert Move(pos_from, Position(4, 0)) in valid_moves
+        assert Move(pos_from, Position(4, 2)) in valid_moves
         assert len(valid_moves) == 2
 
     def test_get_valid_moves_empty_square(self):
@@ -129,14 +131,15 @@ class TestMoveValidatorGetAllValidMoves:
         """Test king can move in all diagonal directions"""
         board = Board()
         validator = MoveValidator()
+        pos_from = Position(4, 4)
 
         # Place king in middle
         board.pieces.clear()
         king = Piece(Color.WHITE)
         king.promote_to_king()
-        board.set_piece(Position(4, 4), king)
+        board.set_piece(pos_from, king)
 
-        valid_moves = validator.get_all_valid_moves(board, Position(4, 4))
+        valid_moves = validator.get_all_valid_moves(board, pos_from)
 
         if CheckersConfig.king_movement == 'single_step':
             # original rule - King can have 4 diagonal moves (forward and backward)
@@ -144,36 +147,37 @@ class TestMoveValidatorGetAllValidMoves:
         else:
             # frequent rule - King can have many diagonal moves (forward and backward)
             assert len(valid_moves) == 13
-            assert Position(6, 2) in valid_moves
-            assert Position(7, 1) in valid_moves
-            assert Position(6, 6) in valid_moves
-            assert Position(7, 7) in valid_moves
-            assert Position(2, 2) in valid_moves
-            assert Position(1, 1) in valid_moves
-            assert Position(0, 0) in valid_moves
-            assert Position(2, 6) in valid_moves
-            assert Position(1, 7) in valid_moves
+            assert Move(pos_from, Position(6, 2)) in valid_moves
+            assert Move(pos_from, Position(7, 1)) in valid_moves
+            assert Move(pos_from, Position(6, 6)) in valid_moves
+            assert Move(pos_from, Position(7, 7)) in valid_moves
+            assert Move(pos_from, Position(2, 2)) in valid_moves
+            assert Move(pos_from, Position(1, 1)) in valid_moves
+            assert Move(pos_from, Position(0, 0)) in valid_moves
+            assert Move(pos_from, Position(2, 6)) in valid_moves
+            assert Move(pos_from, Position(1, 7)) in valid_moves
         # Check all four diagonals in any case
-        assert Position(5, 5) in valid_moves  # Forward-right
-        assert Position(5, 3) in valid_moves  # Forward-left
-        assert Position(3, 5) in valid_moves  # Backward-right
-        assert Position(3, 3) in valid_moves  # Backward-left
+        assert Move(pos_from, Position(5, 5)) in valid_moves  # Forward-right
+        assert Move(pos_from, Position(5, 3)) in valid_moves  # Forward-left
+        assert Move(pos_from, Position(3, 5)) in valid_moves  # Backward-right
+        assert Move(pos_from, Position(3, 3)) in valid_moves  # Backward-left
 
     def test_get_valid_moves_at_board_edge(self):
         """Test valid moves for piece at board edge"""
         board = Board()
         validator = MoveValidator()
+        pos_from = Position(2, 0)
 
         # White piece at edge
         board.pieces.clear()
-        board.set_piece(Position(2, 0), Piece(Color.WHITE))
+        board.set_piece(pos_from, Piece(Color.WHITE))
 
-        valid_moves = validator.get_all_valid_moves(board, Position(2, 0))
+        valid_moves = validator.get_all_valid_moves(board, pos_from)
 
         # Should only have one move (can't go off board)
-        assert Position(3, 1) in valid_moves
+        assert Move(pos_from, Position(3, 1)) in valid_moves
         # Should not try to move off board
-        assert Position(3, -1) not in valid_moves
+        assert Move(pos_from, Position(3, -1)) not in valid_moves
 
 
 class TestMoveValidatorBasicValidation:

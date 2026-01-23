@@ -3,8 +3,11 @@ import random
 from src.board import Board
 from src.config import Color, GameState
 from src.position import Position
+from src.move import Move
 from src.move_validator import MoveValidator
 from src.observer import GameObserver
+from src.ai_player import AiPlayer
+from src.ai_player_random import AiPlayerRandom
 
 
 '''
@@ -23,7 +26,7 @@ class GameEngine {
 class CheckersController:
     """Handles user input and coordinates between model and view."""
 
-    def __init__(self):
+    def __init__(self, ai_player: AiPlayer = AiPlayerRandom(player=Color.BLACK)):
 
         self.board = Board()
         self.validator = MoveValidator()
@@ -31,6 +34,7 @@ class CheckersController:
         self.current_player = Color.WHITE
         self.selected_position = None
         self.observers = []  # List of observers
+        self.ai_player = ai_player
 
         '''
         self.clock = pygame.time.Clock()
@@ -45,7 +49,7 @@ class CheckersController:
             self.selected_position = position
         return is_valid_selection
 
-    def get_valid_moves_for_selected(self) -> List[Tuple[Position, Position]]:
+    def get_valid_moves_for_selected(self) -> list[Move]:
         return self.validator.get_all_valid_moves(self.board, self.selected_position)
 
     def attach_observer(self, observer: GameObserver) -> None:
@@ -70,6 +74,24 @@ class CheckersController:
                 elif event.key == pygame.K_UP:
                     self.model.change_orbit(True)
 
+    def make_move(self, selected_origin: Position, selected_dest: Position) -> bool:
+        selected_move = next((move for move in self.valid_moves if move.dest_pos == selected_dest), None)
+        self.selected_position = None  # if move is successful OR is invalid, anyway clear selected position
+        if selected_move:
+            # valid move
+            self.board.move(selected_move)
+            if selected_move.is_capture:
+                for captured_piece in selected_move.captured_pieces:
+                    self.board.remove_piece(captured_piece)
+
+            if self.current_player == Color.WHITE:
+                self.current_player = Color.BLACK
+            else:
+                self.current_player = Color.WHITE
+            return True
+        else:  # invalid move OR if selecting the same piece the selection is reset
+            return False
+
     def run(self):
         """Main game loop."""
 
@@ -79,24 +101,36 @@ class CheckersController:
         while self.state == GameState.PLAYING:
 
             if self.current_player == Color.WHITE:
-                # Observers display board
-                for observer in self.observers:
+
+                move_successful = False
+                while not move_successful:
+                    # Observers display board
+                    for observer in self.observers:
+                        observer.on_game_state_changed(self.board, self.current_player, self.state)
+
+                    # Select piece by observers
+                    selected_origin = observer.get_selected_origin()
+                    self.select_piece(selected_origin)
+
+                    # Display valid moves for the selected piece
+                    self.valid_moves = self.get_valid_moves_for_selected()
+                    observer.on_piece_selected(self.board, selected_origin, self.valid_moves)
+
+                    # Get and perform movement
+                    selected_dest = observer.get_selected_dest()
+                    move_successful = self.make_move(selected_origin, selected_dest)
                     observer.on_game_state_changed(self.board, self.current_player, self.state)
 
-                # Select piece by observers
-                selected_piece = observer.get_selected_piece()
-                self.select_piece(selected_piece)
-                # Display valid moves for the selected piece
-                valid_moves = self.get_valid_moves_for_selected()
-                observer.on_piece_selected(self.board, selected_piece, valid_moves)
+            else:  # BLACK turn
 
-                # Get and perform movement
-                selected_move = observer.get_selected_move()
-                if selected_move in valid_moves:
-                    pass
-                else:  # invalid move
-                    self.selected_position = None
-                    observer.on_game_state_changed(self.board, self.current_player, self.state)
+                # Select piece by AI player
+                selected_origin = self.ai_player.get_selected_origin(self.board)
+                self.select_piece(selected_origin)
+                self.valid_moves = self.get_valid_moves_for_selected()
+
+                selected_dest = self.ai_player.get_selected_dest(self.board)
+                move_successful = self.make_move(selected_origin, selected_dest)
+                observer.on_game_state_changed(self.board, self.current_player, self.state)
 
 
 

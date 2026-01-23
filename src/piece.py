@@ -19,6 +19,9 @@ class Piece:
     def promote_to_king(self) -> None:
         self.is_king = True
 
+    def __str__(self) -> str:
+        return f"{self.color} Piece, {'IS' if self.is_king else 'not'} a king"
+
 
 """  def move(self, row, col):
     self.row = row

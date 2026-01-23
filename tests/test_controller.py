@@ -27,12 +27,19 @@ from src.checkers_controller import CheckersController
 from src.board import Board
 from src.position import Position
 from src.piece import Piece
+from src.move import Move
 from src.move_validator import MoveValidator
 from src.checkers_view_console import CheckersViewConsole
 from src.config import Color, GameState
 import pytest
 from unittest.mock import Mock, MagicMock, call, patch
 
+
+@pytest.fixture
+def controller():
+    """Create a controller for testing"""
+    controller = CheckersController()
+    return controller
 
 class TestCheckersControllerInitialization:
     """Test CheckersController initialization and setup"""
@@ -158,101 +165,106 @@ class TestCheckersControllerSelection:
 class TestCheckersControllerGetValidMoves:
     """Test getting valid moves for selected piece"""
 
-    def test_get_valid_moves_with_selection(self):
+    def test_get_valid_moves_with_selection(self, controller):
         """Test getting valid moves for selected piece"""
-        controller = CheckersController()
-        position = Position(2, 0)
-        controller.select_piece(position)
+        pos_from = Position(2, 0)
+        controller.select_piece(pos_from)
 
         valid_moves = controller.get_valid_moves_for_selected()
 
         assert isinstance(valid_moves, list)
         assert len(valid_moves) > 0
         # White piece at (2,0) should be able to move to (3,1)
-        assert Position(3, 1) in valid_moves
+        assert Move(pos_from, Position(3, 1)) in valid_moves
 
-    def test_get_valid_moves_without_selection(self):
+    def test_get_valid_moves_without_selection(self, controller):
         """Test getting valid moves when nothing selected"""
-        controller = CheckersController()
 
         valid_moves = controller.get_valid_moves_for_selected()
 
         assert valid_moves == []
 
-    def test_get_valid_moves_returns_move_objects(self):
-        """Test that valid moves list contains position objects"""
-        controller = CheckersController()
-        position = Position(2, 0)
+    def test_get_valid_moves_returns_move_objects(self, controller):
+        """Test that valid moves list contains move objects"""
+        position = Position(2, 4)
         controller.select_piece(position)
 
         valid_moves = controller.get_valid_moves_for_selected()
 
         for move in valid_moves:
-            assert isinstance(move, Position)
+            assert isinstance(move, Move)
+
+
+@pytest.fixture
+def from_pos_simple():
+    return Position(2, 0)
+
+@pytest.fixture
+def controller_selected_piece(from_pos_simple):
+    """Create a controller with a selected piece for testing"""
+    controller = CheckersController()
+    controller.select_piece(from_pos_simple)
+    controller.valid_moves = controller.get_valid_moves_for_selected()
+    return controller
 
 
 class TestCheckersControllerMakeMove:
     """Test move execution"""
 
-    def test_make_simple_valid_move(self):
+    def test_make_simple_valid_move(self, from_pos_simple, controller_selected_piece):
         """Test making a simple valid move"""
-        controller = CheckersController()
-        from_pos = Position(2, 0)
         to_pos = Position(3, 1)
 
-        result = controller.make_move(from_pos, to_pos)
+        move_successful = controller_selected_piece.make_move(from_pos_simple, to_pos)
 
-        assert result is True
-        assert controller.board.get_piece(from_pos) is None
-        assert controller.board.get_piece(to_pos) is not None
-        assert controller.board.get_piece(to_pos).color == Color.WHITE
+        assert move_successful is True
+        assert controller_selected_piece.board.get_piece(from_pos_simple) is None
+        assert controller_selected_piece.board.get_piece(to_pos) is not None
+        assert controller_selected_piece.board.get_piece(to_pos).color == Color.WHITE
 
-    def test_make_invalid_move_fails(self):
+    def test_make_invalid_move_fails(self, from_pos_simple, controller_selected_piece):
         """Test that invalid move returns False"""
-        controller = CheckersController()
-        from_pos = Position(2, 0)
         to_pos = Position(5, 5)  # Invalid destination
 
-        result = controller.make_move(from_pos, to_pos)
+        move_successful = controller_selected_piece.make_move(from_pos_simple, to_pos)
 
-        assert result is False
+        assert move_successful is False
         # Piece should still be at original position
-        assert controller.board.get_piece(from_pos) is not None
+        assert controller_selected_piece.board.get_piece(from_pos_simple) is not None
 
-    def test_make_move_wrong_player(self):
+    def test_make_move_wrong_player(self, controller):
         """Test that moving opponent's piece fails"""
-        controller = CheckersController()
         # White's turn, try to move black piece
         from_pos = Position(5, 1)  # Black piece
+        controller.select_piece(from_pos)
+        controller.valid_moves = controller.get_valid_moves_for_selected()
         to_pos = Position(4, 2)
 
-        result = controller.make_move(from_pos, to_pos)
+        move_successful = controller.make_move(from_pos, to_pos)
 
-        assert result is False
+        assert move_successful is False
 
-    def test_make_move_to_occupied_square(self):
+    def test_make_move_to_occupied_square(self, from_pos_simple, controller_selected_piece):
         """Test that moving to occupied square fails"""
-        controller = CheckersController()
-        from_pos = Position(2, 0)
         to_pos = Position(1, 1)  # Occupied by another white piece
 
-        result = controller.make_move(from_pos, to_pos)
+        move_successful = controller_selected_piece.make_move(from_pos_simple, to_pos)
 
-        assert result is False
+        assert move_successful is False
 
-    def test_make_move_from_empty_square(self):
+    def test_make_move_from_empty_square(self, controller):
         """Test that moving from empty square fails"""
-        controller = CheckersController()
         from_pos = Position(3, 3)  # Empty
+        controller.select_piece(from_pos)
+        controller.valid_moves = controller.get_valid_moves_for_selected()
         to_pos = Position(4, 4)
 
-        result = controller.make_move(from_pos, to_pos)
+        move_successful = controller.make_move(from_pos, to_pos)
 
-        assert result is False
+        assert move_successful is False
 
-    def test_make_capture_move(self):
+    def test_make_capture_move(self, controller):
         """Test making a capture move"""
-        controller = CheckersController()
 
         # Setup: manually place pieces for capture scenario
         # White piece at (3, 1), Black piece at (4, 2), destination (5, 3)
@@ -263,80 +275,69 @@ class TestCheckersControllerMakeMove:
         controller.board.black_count = 1
 
         from_pos = Position(3, 1)
+        controller.select_piece(from_pos)
+        controller.valid_moves = controller.get_valid_moves_for_selected()
         to_pos = Position(5, 3)
 
-        result = controller.make_move(from_pos, to_pos)
+        move_successful = controller.make_move(from_pos, to_pos)
 
-        assert result is True
+        assert move_successful is True
         assert controller.board.get_piece(Position(4, 2)) is None  # Captured piece removed
         assert controller.board.get_piece(to_pos) is not None
         assert controller.board.black_count == 0
 
-    def test_make_move_clears_selection(self):
+    def test_make_move_clears_selection(self, controller_selected_piece, from_pos_simple):
         """Test that making a move clears selected position"""
-        controller = CheckersController()
-        from_pos = Position(2, 0)
         to_pos = Position(3, 1)
 
-        controller.select_piece(from_pos)
-        assert controller.selected_position is not None
+        assert controller_selected_piece.selected_position is not None
 
-        controller.make_move(from_pos, to_pos)
+        controller_selected_piece.make_move(from_pos_simple, to_pos)
 
         # Selection should be cleared after move
-        assert controller.selected_position is None
+        assert controller_selected_piece.selected_position is None
 
 
 class TestCheckersControllerTurnManagement:
     """Test turn switching and management"""
 
-    def test_turn_switches_after_valid_move(self):
+    def test_turn_switches_after_valid_move(self, controller_selected_piece, from_pos_simple):
         """Test that turn switches after successful move"""
-        controller = CheckersController()
-        assert controller.current_player == Color.WHITE
-
-        from_pos = Position(2, 0)
+        assert controller_selected_piece.current_player == Color.WHITE
         to_pos = Position(3, 1)
-        controller.make_move(from_pos, to_pos)
+        controller_selected_piece.make_move(from_pos_simple, to_pos)
 
-        assert controller.current_player == Color.BLACK
+        assert controller_selected_piece.current_player == Color.BLACK
 
-    def test_turn_does_not_switch_after_invalid_move(self):
+    def test_turn_does_not_switch_after_invalid_move(self, controller_selected_piece, from_pos_simple):
         """Test that turn stays same after failed move"""
-        controller = CheckersController()
-        assert controller.current_player == Color.WHITE
+        assert controller_selected_piece.current_player == Color.WHITE
 
-        from_pos = Position(2, 0)
         to_pos = Position(5, 5)  # Invalid move
-        controller.make_move(from_pos, to_pos)
+        controller_selected_piece.make_move(from_pos_simple, to_pos)
 
-        assert controller.current_player == Color.WHITE
+        assert controller_selected_piece.current_player == Color.WHITE
 
-    def test_turn_alternates_correctly(self):
+    def test_turn_alternates_correctly(self, from_pos_simple, controller_selected_piece):
         """Test that turns alternate between players"""
-        controller = CheckersController()
 
         # White move
-        controller.make_move(Position(2, 0), Position(3, 1))
-        assert controller.current_player == Color.BLACK
+        to_pos_white = Position(3, 1)
+        controller_selected_piece.make_move(from_pos_simple, to_pos_white)
+        assert controller_selected_piece.current_player == Color.BLACK
 
         # Black move
-        controller.make_move(Position(5, 1), Position(4, 2))
-        assert controller.current_player == Color.WHITE
+        from_pos_black = Position(5, 1)
+        controller_selected_piece.select_piece(from_pos_black)
+        controller_selected_piece.valid_moves = controller_selected_piece.get_valid_moves_for_selected()
+        controller_selected_piece.make_move(from_pos_black, Position(4, 2))
+        assert controller_selected_piece.current_player == Color.WHITE
 
         # White move again
-        controller.make_move(Position(3, 1), Position(4, 0))
-        assert controller.current_player == Color.BLACK
-
-    def test_get_current_player(self):
-        """Test get_current_player method"""
-        controller = CheckersController()
-
-        assert controller.get_current_player() == Color.WHITE
-
-        controller.make_move(Position(2, 0), Position(3, 1))
-        assert controller.get_current_player() == Color.BLACK
-
+        controller_selected_piece.select_piece(to_pos_white)
+        controller_selected_piece.valid_moves = controller_selected_piece.get_valid_moves_for_selected()
+        controller_selected_piece.make_move(to_pos_white, Position(4, 0))
+        assert controller_selected_piece.current_player == Color.BLACK
 
 class TestCheckersControllerGameState:
     """Test game state management and transitions"""

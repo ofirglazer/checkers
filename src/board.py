@@ -4,6 +4,7 @@ from typing import List, Tuple
 
 from src.piece import Piece
 from src.position import Position
+from src.move import Move
 from src.config import CheckersConfig, Color
 
 
@@ -90,24 +91,21 @@ class Board:
                 '''
 
 
-    def move(self, from_pos: Position, to_pos: Position) -> None:
-        """Move a piece from one position to another
-                Move legality is checked outside"""
-        if self.is_empty(from_pos):
-            raise ValueError("Trying to move a piece from a position without a piece")
-        if not self.is_empty(to_pos):
-            raise ValueError("Trying to move a piece to an occupied position")
+    def move(self, move: Move) -> None:
+        """Move a piece from one position to another, move legality is checked outside"""
+        if not move.valid:
+            raise ValueError("Trying to perform in valid move")
 
-        piece = self.get_piece(from_pos)
-        self.remove_piece(from_pos)
-        self.set_piece(to_pos, piece)
+        piece = self.get_piece(move.from_pos)
+        self.remove_piece(move.from_pos)
+        self.set_piece(move.dest_pos, piece)
 
         # promote to king
         if not piece.is_king:
-            if to_pos.row == 0 and piece.color == Color.BLACK:
+            if move.dest_pos.row == 0 and piece.color == Color.BLACK:
                 piece.promote_to_king()
                 self.black_kings += 1
-            elif to_pos.row == CheckersConfig.board_size - 1 and piece.color == Color.WHITE:
+            elif move.dest_pos.row == CheckersConfig.board_size - 1 and piece.color == Color.WHITE:
                 piece.promote_to_king()
                 self.white_kings += 1
 

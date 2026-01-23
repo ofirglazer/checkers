@@ -12,15 +12,15 @@ class CheckersViewConsole(GameObserver):
         CheckersViewConsole.print_board(board)
 
     @staticmethod
-    def get_selected_piece() -> Position:
-        str = input("Enter row and column of selected piece (e.g. 24 for row=2, col=4: ")
+    def get_selected_origin() -> Position:
+        str = input("Enter row and column of selected piece (e.g. 24 for row=2, col=4): ")
         row = int(str) // 10
         col = int(str) % 10
         return Position(row, col)
 
     @staticmethod
-    def get_selected_move() -> Move:
-        str = input("Enter row and column of move detination(e.g. 24 for row=2, col=4: ")
+    def get_selected_dest() -> Position:
+        str = input("Enter row and column of move detination(e.g. 24 for row=2, col=4): ")
         row = int(str) // 10
         col = int(str) % 10
         return Position(row, col)
@@ -30,14 +30,14 @@ class CheckersViewConsole(GameObserver):
         CheckersViewConsole.print_board(board, valid_moves)
 
     @staticmethod
-    def print_board(board: Board, valid_moves: List[Tuple[Position, Position]] = None) -> None:
+    def print_board(board: Board, valid_moves: List[Move] = None) -> None:
 
-        empty = '.'
+        empty_shape = '.'
         red_piece = "r"
         white_piece = "w"
         red_king = "R"
         white_king = "W"
-        valid_move = "O"
+        valid_move_shape = "O"
         horizontal = "  +" + "---+" * 8
 
         # Column header
@@ -54,10 +54,10 @@ class CheckersViewConsole(GameObserver):
                 else:
                     piece = board.get_piece(Position(r, c))
                     if piece is None:
-                        if valid_moves is not None and Position(r, c) in valid_moves:
-                            piece_shape = valid_move
+                        if valid_moves and Position(r, c) in [move.dest_pos for move in valid_moves]:
+                            piece_shape = valid_move_shape
                         else:
-                            piece_shape = empty
+                            piece_shape = empty_shape
                     elif piece.color == Color.WHITE:
                         piece_shape = white_piece
                     else:
@@ -71,5 +71,5 @@ class CheckersViewConsole(GameObserver):
 if __name__ == '__main__':
     console = CheckersViewConsole()
     board = Board()
-    position = console.get_selected_piece(board, Color.WHITE, GameState.PLAYING)
+    position = console.get_selected_origin(board, Color.WHITE, GameState.PLAYING)
     print(position)
